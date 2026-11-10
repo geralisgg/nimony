@@ -439,6 +439,7 @@ proc genx(c: var GeneratedCode; n: var Cursor) =
   of AconstrC:
     n.into:
       let isUncheckedArray = n.typeKind in {PtrT, AptrT, FlexarrayT}
+      let isEmptyArray = not isUncheckedArray and fixedArrayLen(c.m, n) == 0
       c.objConstrType(n)
       c.add CurlyLe
       if not isUncheckedArray:
@@ -449,8 +450,10 @@ proc genx(c: var GeneratedCode; n: var Cursor) =
         if i > 0: c.add Comma
         c.genx n
         inc i
-      if i == 0 and not isUncheckedArray:
-        # `(aconstr T)`: the all-zero array, whatever `T`'s length
+      if i == 0 and not isUncheckedArray and not isEmptyArray:
+        # `(aconstr T)`: the all-zero array, whatever `T`'s length; a
+        # length-0 array (`a[0]`, a GNU extension) takes `{}`, as `{0}`
+        # would be an excess initializer.
         c.add "0"
       if not isUncheckedArray:
         c.add CurlyRi
